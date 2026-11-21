@@ -156,29 +156,3 @@ Todas las respuestas 401 llevan la cabecera **`WWW-Authenticate: Bearer`**, como
 | Clave de firma filtrada en Git | `SECRET_KEY` va por variable de entorno, nunca en el código. |
 | Token interceptado en la red | En despliegue se usará HTTPS (RNF-02). En local va por HTTP. |
 | Stacktrace con información interna | El handler global de la práctica 1.4 nunca lo muestra al cliente. |
-
-## 7. Guion de la demo en vivo
-
-Antes de nada, borra el `taskflow.db` de prácticas anteriores, porque ahora hay una tabla nueva (`refresh_tokens`). Para no tener que esperar 30 minutos en la demo, arranca con el token de **1 minuto**:
-
-```bat
-.\.venv\Scripts\activate.bat
-python -m pip install -r requirements.txt
-set SECRET_KEY=clave-de-demo-muy-larga-y-aleatoria-1234567890
-set ACCESS_TOKEN_EXPIRE_MINUTES=1
-uvicorn app.main:app --reload
-```
-
-Abre `http://127.0.0.1:8000/docs`:
-
-1. **Sin token → 401:** `POST /api/v1/projects` con `{"name": "Demo"}` → **401 NOT_AUTHENTICATED** (aparece el candado abierto).
-2. **Registro:** `POST /api/v1/auth/register` con `{"username": "duro", "password": "secreto123"}` → **201**. La respuesta no incluye la contraseña.
-3. **Login:** pulsa **Authorize** (arriba a la derecha), escribe `duro` / `secreto123` → *Authorize*. Swagger hace el login y guarda el token.
-4. **Petición protegida:** repite `POST /api/v1/projects` → **201**. Ahora sí se crea.
-5. **Login incorrecto:** `POST /api/v1/auth/login` con una contraseña mala → **401 "Usuario o contraseña incorrectos"**. Con un usuario que no existe sale el mismo mensaje.
-6. **Token expirado:** espera algo más de 1 minuto y repite el `POST /api/v1/projects` → **401 TOKEN_EXPIRED**, con la cabecera `www-authenticate: Bearer error="invalid_token"`.
-7. *(Extra)* **Refresh:** `POST /api/v1/auth/refresh` con el `refresh_token` del login → nuevo par de tokens. Si lo repites con el mismo refresh token → **401 TOKEN_REUSED**.
-
-También se puede hacer en Postman con la colección `TaskFlow.postman_collection.json`: la carpeta *0. Autenticación* hace el registro y el login, y guarda el token para el resto de peticiones.
-
-Para enseñar que la contraseña no está en texto plano, abre `taskflow.db` (por ejemplo, con DB Browser for SQLite) y mira la tabla `users`: solo aparece el hash `$2b$12$...`.
